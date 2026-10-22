@@ -14,14 +14,19 @@
     <!-- ===== HEADER ===== -->
     <header id="header">
         <div class="container header-inner">
+            <!-- Logo centré et cliquable -->
             <div class="logo">
-                <img src="logo.jpeg" alt="ADA AGRO-BUSINESS" class="logo-img" />
+                <a href="#home" title="Retour à l'accueil">
+                    <img src="logo.jpeg" alt="ADA AGRO-BUSINESS" class="logo-img" />
+                </a>
             </div>
 
+            <!-- Bouton menu mobile (positionné à droite) -->
             <button class="mobile-toggle" id="mobileToggle" aria-label="Menu">
                 <i class="fas fa-bars"></i>
             </button>
 
+            <!-- Navigation -->
             <nav id="mainNav">
                 <a href="#home" class="active">Accueil</a>
                 <a href="#products">Produits</a>
@@ -30,6 +35,7 @@
                 <a href="#" id="adminNavLink" class="admin-link">Connexion</a>
             </nav>
 
+            <!-- Panier -->
             <button class="cart-icon-wrap" id="cartToggle" aria-label="Panier">
                 <i class="fas fa-shopping-cart"></i>
                 <span class="cart-count" id="cartCount">0</span>

@@ -96,35 +96,55 @@ header {
     z-index: 1000;
     transition: var(--transition);
 }
+
 header.scrolled { box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06); }
 
 .header-inner {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 0; 
-    flex-wrap: wrap;
-    gap: 12px;
+    flex-direction: column; /* Aligne les éléments verticalement */
+    align-items: center;    /* Centre tout au milieu */
+    justify-content: center;
+    padding: 15px 0;
+    gap: 15px;              /* Espace entre le logo et le menu */
+    position: relative;
 }
 
-/* Logo massivement agrandi */
+/* Le conteneur du logo */
 .logo { 
     display: flex; 
     align-items: center; 
-    flex-shrink: 0; 
-    height: 120px; 
+    justify-content: center; 
 }
 
+/* L'image du logo, maintenant plus grande */
 .logo-img { 
-    height: 100%; 
+    height: 120px;          
     width: auto; 
-    max-width: 400px; 
+    max-width: 350px; 
     object-fit: contain; 
-    transform: scale(1.1); 
-    transform-origin: left center; 
+    transition: var(--transition);
 }
 
-nav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.logo-img:hover {
+    transform: scale(1.05); 
+}
+
+/* Bouton menu mobile */
+.mobile-toggle {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.6rem;
+    color: var(--text-dark);
+    cursor: pointer;
+    padding: 4px 8px;
+    position: absolute;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+nav { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
 nav a {
     padding: 8px 18px;
     border-radius: 40px;
@@ -150,15 +170,6 @@ nav a.active {
     background: var(--primary-dark) !important;
     color: #fff !important;
 }
-.mobile-toggle {
-    display: none;
-    background: none;
-    border: none;
-    font-size: 1.6rem;
-    color: var(--text-dark);
-    cursor: pointer;
-    padding: 4px 8px;
-}
 .admin-link {
     display: inline-flex;
     align-items: center;
@@ -178,7 +189,10 @@ nav a.active {
 }
 
 .cart-icon-wrap {
-    position: relative;
+    position: absolute; /* Positionné en absolu pour ne pas casser le centrage */
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1003,8 +1017,7 @@ footer {
     .admin-table { font-size: 0.8rem; }
     .admin-table th, .admin-table td { padding: 6px 4px; }
     
-    .logo { height: 90px; }
-    .logo-img { max-width: 300px; transform: scale(1); }
+    .logo-img { height: 90px; max-width: 250px; }
 }
 
 @media (max-width: 768px) {
@@ -1020,6 +1033,11 @@ footer {
     nav.open { display: flex; }
     nav a { padding: 12px 16px; border-radius: 8px; text-align: center; }
     .nav-cta { text-align: center; }
+    
+    .cart-icon-wrap {
+        right: 60px; /* Décalé pour laisser la place au bouton hamburger */
+    }
+
     .hero-content h1 { font-size: 2.4rem; }
     .section-title h2 { font-size: 2.2rem; }
     .product-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
@@ -1041,8 +1059,7 @@ footer {
     .product-admin-item { flex-direction: column; align-items: stretch; }
     .product-admin-item .actions { justify-content: flex-end; }
     
-    .logo { height: 70px; }
-    .logo-img { max-width: 220px; }
+    .logo-img { height: 75px; max-width: 200px; }
 }
 
 @media (max-width: 480px) {
@@ -1055,8 +1072,8 @@ footer {
     .stat-item .number { font-size: 1.5rem; }
     .add-to-cart { align-self: stretch; }
     
-    .logo { height: 60px; }
-    .logo-img { max-width: 180px; }
+    .logo-img { height: 60px; max-width: 160px; }
+    .cart-icon-wrap { right: 50px; padding: 6px 10px; }
 }
 
 /* ===== STOCK BADGE ===== */
