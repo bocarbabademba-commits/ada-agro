@@ -1,25 +1,26 @@
 const bcrypt = require('bcryptjs');
 const pool = require('./db');
 
-async function seedAdmin() {
+async function resetPassword() {
     const username = 'superadmin';
-    const email = 'superadmin@ada.agro';
     const password = 'super123';
 
     try {
-        const check = await pool.query('SELECT * FROM admins WHERE nom=$1 OR email=$2', [username, email]);
-        if (check.rows.length > 0) {
-            console.log('ℹ️ L\'admin existe déjà.');
-            process.exit(0);
-        }
-
+        // Génère le hash avec la même bibliothèque que le serveur
         const hashed = await bcrypt.hash(password, 10);
+        
+        // Met à jour l'admin existant
         const result = await pool.query(
-            'INSERT INTO admins (nom, email, password, role) VALUES ($1, $2, $3, $4) RETURNING *',
-            [username, email, hashed, 'superadmin']
+            'UPDATE admins SET password = $1 WHERE nom = $2 RETURNING *',
+            [hashed, username]
         );
 
-        console.log('✅ Superadmin créé :', result.rows[0]);
+        if (result.rows.length > 0) {
+            console.log('✅ Mot de passe mis à jour avec succès pour superadmin !');
+            console.log('Nouveau hash :', hashed);
+        } else {
+            console.log('❌ Admin non trouvé.');
+        }
     } catch (err) {
         console.error('❌ Erreur :', err);
     } finally {
@@ -27,4 +28,4 @@ async function seedAdmin() {
     }
 }
 
-seedAdmin();
+resetPassword();

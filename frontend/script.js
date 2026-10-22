@@ -1,7 +1,11 @@
 // ============================================================
 // 1. CONFIGURATION
 // ============================================================
-const API_BASE = 'http://localhost:5000/api';
+// Détecte automatiquement si on est en local ou en ligne (Render)
+const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:') 
+    ? 'http://localhost:5000/api' 
+    : '/api';
+
 let token = sessionStorage.getItem('adaToken') || null;
 let currentAdmin = null;
 let cart = JSON.parse(sessionStorage.getItem('adaCart')) || [];
@@ -16,12 +20,16 @@ function formatPrice(price) {
 async function apiRequest(endpoint, method = 'GET', body = null) {
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['x-auth-token'] = token;
+
     const options = { method, headers };
     if (body) options.body = JSON.stringify(body);
 
     const response = await fetch(`${API_BASE}${endpoint}`, options);
     const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Erreur serveur');
+
+    if (!response.ok) {
+        throw new Error(data.message || 'Erreur serveur');
+    }
     return data;
 }
 
@@ -110,7 +118,7 @@ function addToCart(product) {
 }
 
 // ============================================================
-// 4. AFFICHAGE DES PRODUITS
+// 4. AFFICHAGE DES PRODUITS (client)
 // ============================================================
 async function renderClientProducts(filter = 'all') {
     try {
@@ -129,6 +137,7 @@ async function renderClientProducts(filter = 'all') {
                 `<video src="${p.media}" muted loop></video>` :
                 `<img src="${p.media}" alt="${p.nom}" />`) :
                 `<div class="img-placeholder"><i class="fas fa-seedling"></i><span>${p.nom}</span></div>`;
+            
             const stock = p.stock || 0;
             const stockClass = getStockClass(stock);
             const stockLabel = getStockLabel(stock);
