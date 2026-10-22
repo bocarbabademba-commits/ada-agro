@@ -1,0 +1,19 @@
+# Dépendances
+node_modules/
+backend/node_modules/
+
+# Fichiers d'environnement (TRÈS IMPORTANT)
+.env
+backend/.env
+
+# Logs
+*.log
+npm-debug.log*
+
+# Système
+.DS_Store
+Thumbs.db
+
+# Dossiers de build
+dist/
+build/
