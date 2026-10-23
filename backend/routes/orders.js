@@ -6,32 +6,40 @@ const fs = require('fs');
 const path = require('path');
 const router = express.Router();
 
-// Créer le dossier "factures" s'il n'existe pas
 const facturesDir = path.join(__dirname, '../factures');
-if (!fs.existsSync(facturesDir)) {
-    fs.mkdirSync(facturesDir);
-}
+if (!fs.existsSync(facturesDir)) fs.mkdirSync(facturesDir);
 
 // ==========================================
-// 1. GET : Récupérer toutes les commandes (Admin)
+// 1. GET : Toutes les commandes (Admin)
 // ==========================================
 router.get('/', auth, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM orders ORDER BY created_at DESC');
         res.json(result.rows);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
+    } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
 // ==========================================
-// 2. POST : Créer une nouvelle commande (Client)
+// 2. GET : Suivi de commande par téléphone (Public)
+// ==========================================
+router.get('/track/:phone', async (req, res) => {
+    const { phone } = req.params;
+    try {
+        const result = await pool.query(
+            'SELECT * FROM orders WHERE phone = $1 ORDER BY created_at DESC LIMIT 5',
+            [phone]
+        );
+        res.json(result.rows);
+    } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
+// ==========================================
+// 3. POST : Créer une commande
 // ==========================================
 router.post('/', async (req, res) => {
     const { clientName, phone, address, items, total, payment, paymentDetails, promoCode, discountAmount } = req.body;
 
     try {
-        // A. Vérification et déduction des stocks
         for (const item of items) {
             const prodResult = await pool.query('SELECT stock FROM products WHERE id=$1', [item.id]);
             if (prodResult.rows.length === 0) return res.status(400).json({ message: `Produit ${item.nom} introuvable.` });
@@ -40,7 +48,6 @@ router.post('/', async (req, res) => {
             await pool.query('UPDATE products SET stock = stock - $1 WHERE id=$2', [item.quantite, item.id]);
         }
 
-        // B. Enregistrement de la commande
         const result = await pool.query(
             `INSERT INTO orders ("clientName", phone, address, items, total, payment, "paymentDetails", promo_code, discount_amount) 
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
@@ -48,13 +55,9 @@ router.post('/', async (req, res) => {
         );
 
         const newOrder = result.rows[0];
-
-        // --- C. GÉNÉRATION DE LA FACTURE PDF ---
         const invoiceFileName = `facture_${newOrder.id}.pdf`;
-        const invoicePath = path.join(facturesDir, invoiceFileName);
-        generateInvoicePDF(newOrder, invoicePath);
+        generateInvoicePDF(newOrder, path.join(facturesDir, invoiceFileName));
 
-        // D. Attribution des points de fidélité
         const points = Math.floor(total / 100);
         if (points > 0) {
             const custResult = await pool.query('SELECT * FROM customers WHERE phone=$1', [phone]);
@@ -65,17 +68,12 @@ router.post('/', async (req, res) => {
             }
         }
 
-        // On renvoie la commande avec le nom du fichier PDF
         res.status(201).json({ ...newOrder, invoice_file: invoiceFileName });
-
-    } catch (err) {
-        console.error(err);
-        res.status(400).json({ message: err.message });
-    }
+    } catch (err) { res.status(400).json({ message: err.message }); }
 });
 
 // ==========================================
-// 3. PUT : Mettre à jour le statut (Admin)
+// 4. PUT : Changer le statut (Admin)
 // ==========================================
 router.put('/:id', auth, async (req, res) => {
     const { id } = req.params;
@@ -88,7 +86,7 @@ router.put('/:id', auth, async (req, res) => {
 });
 
 // ==========================================
-// 4. DELETE : Supprimer une commande (Admin)
+// 5. DELETE : Supprimer une commande (Admin)
 // ==========================================
 router.delete('/:id', auth, async (req, res) => {
     const { id } = req.params;
@@ -98,61 +96,42 @@ router.delete('/:id', auth, async (req, res) => {
     } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-// ==========================================
-// FONCTION DE GÉNÉRATION DE FACTURE PDF
-// ==========================================
+// FONCTION PDF
 function generateInvoicePDF(order, filePath) {
     const doc = new PDFDocument({ margin: 50 });
     doc.pipe(fs.createWriteStream(filePath));
 
-    // En-tête
     doc.fontSize(20).fillColor('#1a5e1a').text('ADA AGRO-BUSINESS', { align: 'center' });
     doc.fontSize(10).fillColor('#000').text('Etablissement Traoré - Dakar, Sénégal', { align: 'center' });
     doc.text('Téléphone: +221 78 013 51 07 | Email: trao2@live.fr', { align: 'center' });
     doc.moveDown();
-
-    // Titre
     doc.fontSize(16).text(`FACTURE N° ${order.id}`, { align: 'center', underline: true });
     doc.moveDown();
-
-    // Infos Client
     doc.fontSize(12).text(`Date : ${new Date(order.created_at).toLocaleDateString()}`);
     doc.text(`Client : ${order.clientName}`);
     doc.text(`Téléphone : ${order.phone}`);
     doc.text(`Adresse : ${order.address}`);
     doc.moveDown();
-
-    // Tableau des articles
     doc.fontSize(12).text('Détail des achats :', { underline: true });
     doc.moveDown(0.5);
     
     let y = doc.y;
-    doc.text('Produit', 50, y);
-    doc.text('Qté', 300, y);
-    doc.text('Prix Unitaire', 350, y);
-    doc.text('Total', 450, y);
+    doc.text('Produit', 50, y); doc.text('Qté', 300, y); doc.text('Prix Unitaire', 350, y); doc.text('Total', 450, y);
     doc.moveDown();
     doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
 
     order.items.forEach(item => {
         doc.moveDown(0.5);
         y = doc.y;
-        doc.text(item.nom, 50, y);
-        doc.text(item.quantite.toString(), 300, y);
-        doc.text(item.prix.toLocaleString() + ' FCFA', 350, y);
-        doc.text((item.prix * item.quantite).toLocaleString() + ' FCFA', 450, y);
+        doc.text(item.nom, 50, y); doc.text(item.quantite.toString(), 300, y); doc.text(item.prix.toLocaleString() + ' FCFA', 350, y); doc.text((item.prix * item.quantite).toLocaleString() + ' FCFA', 450, y);
     });
 
     doc.moveDown();
     doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
     doc.moveDown();
 
-    // Totaux
-    if (order.discount_amount > 0) {
-        doc.fontSize(12).fillColor('green').text(`Réduction (${order.promo_code}) : -${order.discount_amount.toLocaleString()} FCFA`, { align: 'right' });
-    }
+    if (order.discount_amount > 0) doc.fontSize(12).fillColor('green').text(`Réduction (${order.promo_code}) : -${order.discount_amount.toLocaleString()} FCFA`, { align: 'right' });
     doc.fontSize(14).fillColor('#000').text(`TOTAL À PAYER : ${order.total.toLocaleString()} FCFA`, { align: 'right', bold: true });
-    
     doc.moveDown(2);
     doc.fontSize(10).fillColor('gray').text(`Mode de paiement : ${order.payment}`, { align: 'right' });
 

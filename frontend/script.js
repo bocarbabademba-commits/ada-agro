@@ -22,11 +22,16 @@ function formatPrice(price) {
 async function apiRequest(endpoint, method = 'GET', body = null) {
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['x-auth-token'] = token;
+
     const options = { method, headers };
     if (body) options.body = JSON.stringify(body);
+
     const response = await fetch(`${API_BASE}${endpoint}`, options);
     const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Erreur serveur');
+
+    if (!response.ok) {
+        throw new Error(data.message || 'Erreur serveur');
+    }
     return data;
 }
 
@@ -115,7 +120,7 @@ function addToCart(product) {
 }
 
 // ============================================================
-// 4. AFFICHAGE DES PRODUITS & RECHERCHE & AVIS
+// 4. AFFICHAGE DES PRODUITS & RECHERCHE
 // ============================================================
 async function renderClientProducts(filter = 'all') {
     try {
@@ -131,11 +136,17 @@ async function renderClientProducts(filter = 'all') {
 function applyFiltersAndRender(categoryFilter = 'all', searchText = '') {
     const grid = document.getElementById('productGrid');
     let filtered = allProductsData;
+    
     if (categoryFilter !== 'all') filtered = filtered.filter(p => p.categorie === categoryFilter);
+    
     if (searchText.trim() !== '') {
         const lowerSearch = searchText.toLowerCase();
-        filtered = filtered.filter(p => p.nom.toLowerCase().includes(lowerSearch) || (p.description && p.description.toLowerCase().includes(lowerSearch)));
+        filtered = filtered.filter(p => 
+            p.nom.toLowerCase().includes(lowerSearch) || 
+            (p.description && p.description.toLowerCase().includes(lowerSearch))
+        );
     }
+
     if (filtered.length === 0) {
         grid.innerHTML = '<p style="text-align:center;color:var(--gray);padding:40px 0;">Aucun produit ne correspond à votre recherche.</p>';
         return;
@@ -143,12 +154,17 @@ function applyFiltersAndRender(categoryFilter = 'all', searchText = '') {
 
     let html = '';
     filtered.forEach(p => {
-        const mediaHtml = p.media ? (p.media.startsWith('data:video') ? `<video src="${p.media}" muted loop></video>` : `<img src="${p.media}" alt="${p.nom}" />`) : `<div class="img-placeholder"><i class="fas fa-seedling"></i><span>${p.nom}</span></div>`;
+        const mediaHtml = p.media ? (p.media.startsWith('data:video') ?
+            `<video src="${p.media}" muted loop></video>` :
+            `<img src="${p.media}" alt="${p.nom}" />`) :
+            `<div class="img-placeholder"><i class="fas fa-seedling"></i><span>${p.nom}</span></div>`;
+        
         const stock = p.stock || 0;
         const stockClass = getStockClass(stock);
         const stockLabel = getStockLabel(stock);
         const disabled = stock <= 0 ? 'disabled' : '';
         const btnText = stock <= 0 ? 'Rupture de stock' : 'Ajouter au panier';
+
         html += `
             <div class="product-card" data-id="${p.id}">
                 <div class="product-image">${mediaHtml}<span class="product-tag">${p.categorie}</span></div>
@@ -167,6 +183,7 @@ function applyFiltersAndRender(categoryFilter = 'all', searchText = '') {
         `;
     });
     grid.innerHTML = html;
+
     grid.querySelectorAll('.add-to-cart').forEach(btn => {
         btn.addEventListener('click', function() {
             if (this.disabled) return;
@@ -177,7 +194,7 @@ function applyFiltersAndRender(categoryFilter = 'all', searchText = '') {
     });
 }
 
-// --- GESTION DES AVIS ---
+// --- GESTION DES AVIS CLIENTS ---
 function toggleReviews(productId) {
     let existingSection = document.getElementById(`reviews_section_${productId}`);
     if (existingSection) { existingSection.remove(); return; }
@@ -254,6 +271,55 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 });
 
 // ============================================================
+// 4bis. SUIVI DE COMMANDE (CLIENT)
+// ============================================================
+const trackOrderModal = document.getElementById('trackOrderModal');
+const trackOrderClose = document.getElementById('trackOrderClose');
+const trackOrderNavLink = document.getElementById('trackOrderNavLink');
+const trackOrderHeroBtn = document.getElementById('trackOrderHeroBtn');
+
+if (trackOrderNavLink) trackOrderNavLink.addEventListener('click', (e) => { e.preventDefault(); trackOrderModal.classList.add('active'); });
+if (trackOrderHeroBtn) trackOrderHeroBtn.addEventListener('click', (e) => { e.preventDefault(); trackOrderModal.classList.add('active'); });
+if (trackOrderClose) trackOrderClose.addEventListener('click', () => { trackOrderModal.classList.remove('active'); document.getElementById('trackResults').innerHTML = ''; });
+if (trackOrderModal) trackOrderModal.addEventListener('click', (e) => { if (e.target === e.currentTarget) { trackOrderModal.classList.remove('active'); document.getElementById('trackResults').innerHTML = ''; } });
+
+if (document.getElementById('trackOrderForm')) {
+    document.getElementById('trackOrderForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const phone = document.getElementById('trackPhone').value.trim();
+        const resultsDiv = document.getElementById('trackResults');
+        resultsDiv.innerHTML = '<p style="text-align:center;">Recherche...</p>';
+
+        try {
+            const orders = await apiRequest(`/orders/track/${phone}`);
+            if (orders.length === 0) {
+                resultsDiv.innerHTML = '<p style="color:red; text-align:center;">Aucune commande trouvée pour ce numéro.</p>';
+                return;
+            }
+            
+            let html = '';
+            orders.forEach(order => {
+                const statusClass = 'status-' + order.status.replace(' ', '-');
+                let statusIcon = order.status === 'en attente' ? 'fa-clock' : (order.status === 'confirmée' ? 'fa-check-circle' : 'fa-truck');
+                html += `
+                    <div style="background: var(--cream); padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid ${order.status === 'livrée' ? '#10b981' : 'var(--secondary)'};">
+                        <div style="display:flex; justify-content:space-between; margin-bottom: 8px;">
+                            <strong>Commande #${order.id}</strong>
+                            <span class="status-badge ${statusClass}"><i class="fas ${statusIcon}"></i> ${order.status}</span>
+                        </div>
+                        <p style="font-size: 0.85rem; color: var(--gray); margin-bottom: 5px;">Date : ${new Date(order.created_at).toLocaleDateString()}</p>
+                        <p style="font-size: 0.9rem;">Total : <strong>${formatPrice(order.total)}</strong></p>
+                    </div>
+                `;
+            });
+            resultsDiv.innerHTML = html;
+        } catch (error) {
+            resultsDiv.innerHTML = `<p style="color:red; text-align:center;">Erreur : ${error.message}</p>`;
+        }
+    });
+}
+
+// ============================================================
 // 5. COMMANDE + PAIEMENT + CODE PROMO
 // ============================================================
 document.getElementById('checkoutBtn').addEventListener('click', () => {
@@ -281,9 +347,13 @@ function updateCheckoutSummary() {
         subtotal += st;
         html += `<div class="line"><span>${item.nom} (×${item.quantite})</span><span>${formatPrice(st)}</span></div>`;
     });
+    
     let discountValue = (subtotal * appliedDiscount) / 100;
     let finalTotal = subtotal - discountValue;
-    if (appliedDiscount > 0) html += `<div class="line" style="color: #2e7d32;"><span>Réduction (${appliedDiscount}%)</span><span>-${formatPrice(discountValue)}</span></div>`;
+
+    if (appliedDiscount > 0) {
+        html += `<div class="line" style="color: #2e7d32;"><span>Réduction (${appliedDiscount}%)</span><span>-${formatPrice(discountValue)}</span></div>`;
+    }
     html += `<div class="line total"><span>Total à payer</span><span>${formatPrice(finalTotal)}</span></div>`;
     summary.innerHTML = html;
 }
@@ -291,7 +361,9 @@ function updateCheckoutSummary() {
 document.getElementById('applyPromoBtn').addEventListener('click', async () => {
     const code = document.getElementById('promoCodeInput').value.trim();
     const msg = document.getElementById('promoMessage');
+    
     if (!code) { msg.textContent = "Veuillez saisir un code."; msg.style.color = "red"; return; }
+
     try {
         const data = await apiRequest('/promos/verify', 'POST', { code });
         appliedDiscount = data.discount;
@@ -299,12 +371,17 @@ document.getElementById('applyPromoBtn').addEventListener('click', async () => {
         msg.style.color = "#2e7d32";
         updateCheckoutSummary();
     } catch (error) {
-        appliedDiscount = 0; msg.textContent = error.message; msg.style.color = "red"; updateCheckoutSummary();
+        appliedDiscount = 0;
+        msg.textContent = error.message;
+        msg.style.color = "red";
+        updateCheckoutSummary();
     }
 });
 
 document.getElementById('checkoutClose').addEventListener('click', closeCheckout);
-document.getElementById('cartOverlay').addEventListener('click', () => { if (document.getElementById('checkoutModal').classList.contains('active')) closeCheckout(); });
+document.getElementById('cartOverlay').addEventListener('click', () => {
+    if (document.getElementById('checkoutModal').classList.contains('active')) closeCheckout();
+});
 
 function closeCheckout() {
     document.getElementById('checkoutModal').classList.remove('active');
@@ -323,7 +400,9 @@ document.getElementById('checkoutPayment').addEventListener('change', function()
         container.innerHTML = `<div class="payment-fields"><h5><i class="fas fa-credit-card"></i> Carte bancaire</h5><div class="form-group"><label>Numéro de carte</label><input type="text" id="cbNumber" placeholder="1234 5678 9012 3456" maxlength="19" required /></div><div class="form-row"><div class="form-group"><label>Expiration</label><input type="text" id="cbExpiry" placeholder="MM/AA" maxlength="5" required /></div><div class="form-group"><label>CVV</label><input type="text" id="cbCvv" placeholder="123" maxlength="4" required /></div></div><div class="form-group"><label>Nom sur la carte</label><input type="text" id="cbName" placeholder="NOM PRENOM" required /></div></div>`;
     } else if (val === 'especes') {
         container.innerHTML = `<div class="payment-fields"><h5><i class="fas fa-money-bill-wave"></i> Espèces à la livraison</h5><p style="font-size:0.9rem;color:var(--gray);">Vous paierez en espèces au moment de la livraison.</p></div>`;
-    } else { container.innerHTML = ''; }
+    } else {
+        container.innerHTML = '';
+    }
 });
 
 document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
@@ -332,8 +411,9 @@ document.getElementById('checkoutForm').addEventListener('submit', async (e) => 
     const phone = document.getElementById('checkoutPhone').value.trim();
     const address = document.getElementById('checkoutAddress').value.trim();
     const payment = document.getElementById('checkoutPayment').value;
+
     if (!name || !phone || !address || !payment) { alert('Veuillez remplir tous les champs obligatoires.'); return; }
-    
+
     let paymentDetails = {};
     if (payment === 'mobile_money') {
         const operator = document.getElementById('pmOperator')?.value;
@@ -357,13 +437,18 @@ document.getElementById('checkoutForm').addEventListener('submit', async (e) => 
 
     try {
         await apiRequest('/orders', 'POST', { clientName: name, phone, address, items, total, payment, paymentDetails, promoCode, discountAmount });
-        cart = []; appliedDiscount = 0; saveCart();
-        closeCheckout(); closeCart();
+        cart = [];
+        appliedDiscount = 0;
+        saveCart();
+        closeCheckout();
+        closeCart();
         document.getElementById('checkoutForm').reset();
         document.getElementById('paymentDetails').innerHTML = '';
         alert('✅ Commande enregistrée ! Merci.');
         renderClientProducts();
-    } catch (error) { alert('Erreur : ' + error.message); }
+    } catch (error) {
+        alert('Erreur : ' + error.message);
+    }
 });
 
 // ============================================================
@@ -372,7 +457,8 @@ document.getElementById('checkoutForm').addEventListener('submit', async (e) => 
 async function loginAdmin(username, password) {
     try {
         const data = await apiRequest('/auth/login', 'POST', { username, password });
-        token = data.token; currentAdmin = data.admin;
+        token = data.token;
+        currentAdmin = data.admin;
         sessionStorage.setItem('adaToken', token);
         showAdminUI();
         return true;
@@ -380,8 +466,11 @@ async function loginAdmin(username, password) {
 }
 
 function logoutAdmin() {
-    sessionStorage.removeItem('adaToken'); token = null; currentAdmin = null;
-    hideAdminUI(); window.location.hash = '#home';
+    sessionStorage.removeItem('adaToken');
+    token = null;
+    currentAdmin = null;
+    hideAdminUI();
+    window.location.hash = '#home';
 }
 
 function checkSession() {
@@ -400,7 +489,10 @@ function showAdminUI() {
     document.getElementById('about').style.display = 'none';
     document.getElementById('contact').style.display = 'none';
     document.getElementById('adminSection').style.display = 'block';
-    renderAdminProducts(); renderOrders(); renderCustomers(); renderAdmins();
+    renderAdminProducts();
+    renderOrders();
+    renderCustomers();
+    renderAdmins();
 }
 
 function hideAdminUI() {
@@ -427,7 +519,9 @@ document.getElementById('adminLoginForm').addEventListener('submit', async (e) =
         document.getElementById('adminLoginModal').classList.remove('active');
         document.getElementById('loginError').style.display = 'none';
         document.getElementById('adminLoginForm').reset();
-    } else { document.getElementById('loginError').style.display = 'block'; }
+    } else {
+        document.getElementById('loginError').style.display = 'block';
+    }
 });
 
 document.getElementById('adminLogoutBtn').addEventListener('click', logoutAdmin);
@@ -652,7 +746,6 @@ async function renderOrders() {
         const container = document.getElementById('ordersList');
         if (orders.length === 0) { container.innerHTML = '<p>Aucune commande.</p>'; return; }
         
-        // Ajout de la colonne "Facture"
         let html = `<table class="admin-table"><thead><tr><th>#</th><th>Client</th><th>Téléphone</th><th>Total</th><th>Paiement</th><th>Statut</th><th>Actions</th><th>Facture</th></tr></thead><tbody>`;
         
         orders.forEach(order => {
@@ -661,8 +754,6 @@ async function renderOrders() {
             const paymentClass = 'payment-' + (order.payment || 'especes');
             const paymentLabel = paymentLabels[order.payment] || 'Non spécifié';
             const promoText = order.promo_code ? ` <br><small style="color:green;">Code: ${order.promo_code}</small>` : '';
-
-            // Bouton de téléchargement PDF
             const pdfLink = `<a href="/factures/facture_${order.id}.pdf" target="_blank" class="btn btn-sm" style="background:#fee2e2;color:#b91c1c; text-decoration:none; display:inline-flex; align-items:center; gap:5px;"><i class="fas fa-file-pdf"></i> PDF</a>`;
 
             html += `

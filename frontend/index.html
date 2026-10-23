@@ -25,6 +25,7 @@
             <nav id="mainNav">
                 <a href="#home" class="active">Accueil</a>
                 <a href="#products">Produits</a>
+                <a href="#" id="trackOrderNavLink">Suivre ma commande</a> <!-- NOUVEAU BOUTON -->
                 <a href="#about">À propos</a>
                 <a href="#contact" class="nav-cta">Contact</a>
                 <a href="#" id="adminNavLink" class="admin-link">Connexion</a>
@@ -49,7 +50,7 @@
                 </div>
                 <div class="hero-actions">
                     <a href="#products" class="btn"><i class="fas fa-store"></i> Découvrir nos produits</a>
-                    <a href="#contact" class="btn btn-outline"><i class="fas fa-phone"></i> Nous contacter</a>
+                    <a href="#" id="trackOrderHeroBtn" class="btn btn-outline"><i class="fas fa-truck"></i> Suivre ma commande</a>
                 </div>
             </div>
             <div class="hero-visual">
@@ -89,7 +90,7 @@
         </div>
     </section>
 
-    <!-- ===== ABOUT & CONTACT ===== -->
+    <!-- ===== ABOUT ===== -->
     <section class="about" id="about">
         <div class="container about-grid">
             <div class="about-image">
@@ -109,6 +110,7 @@
         </div>
     </section>
 
+    <!-- ===== CONTACT ===== -->
     <section class="contact" id="contact">
         <div class="container contact-grid">
             <div class="contact-info">
@@ -179,6 +181,23 @@
             </div>
         </div>
     </section>
+
+    <!-- ===== NOUVEAU : MODAL DE SUIVI DE COMMANDE ===== -->
+    <div class="modal-overlay" id="trackOrderModal">
+        <div class="modal-box" style="max-width:480px;">
+            <button class="modal-close" id="trackOrderClose"><i class="fas fa-times"></i></button>
+            <h3>Suivre ma commande</h3>
+            <p>Saisissez le numéro de téléphone utilisé lors de votre commande.</p>
+            <form id="trackOrderForm">
+                <div class="form-group">
+                    <label>Téléphone</label>
+                    <input type="tel" id="trackPhone" placeholder="+221 77 000 00 00" required />
+                </div>
+                <button type="submit" class="btn btn-secondary" style="width:100%; justify-content:center;">Rechercher</button>
+            </form>
+            <div id="trackResults" style="margin-top: 20px;"></div>
+        </div>
+    </div>
 
     <!-- ===== MODALS (Produits, Admin, Connexion, Mots de passe) ===== -->
     <div class="modal-overlay" id="productModalOverlay">
