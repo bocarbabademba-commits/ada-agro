@@ -22,16 +22,11 @@ function formatPrice(price) {
 async function apiRequest(endpoint, method = 'GET', body = null) {
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['x-auth-token'] = token;
-
     const options = { method, headers };
     if (body) options.body = JSON.stringify(body);
-
     const response = await fetch(`${API_BASE}${endpoint}`, options);
     const data = await response.json();
-
-    if (!response.ok) {
-        throw new Error(data.message || 'Erreur serveur');
-    }
+    if (!response.ok) throw new Error(data.message || 'Erreur serveur');
     return data;
 }
 
@@ -136,17 +131,11 @@ async function renderClientProducts(filter = 'all') {
 function applyFiltersAndRender(categoryFilter = 'all', searchText = '') {
     const grid = document.getElementById('productGrid');
     let filtered = allProductsData;
-    
     if (categoryFilter !== 'all') filtered = filtered.filter(p => p.categorie === categoryFilter);
-    
     if (searchText.trim() !== '') {
         const lowerSearch = searchText.toLowerCase();
-        filtered = filtered.filter(p => 
-            p.nom.toLowerCase().includes(lowerSearch) || 
-            (p.description && p.description.toLowerCase().includes(lowerSearch))
-        );
+        filtered = filtered.filter(p => p.nom.toLowerCase().includes(lowerSearch) || (p.description && p.description.toLowerCase().includes(lowerSearch)));
     }
-
     if (filtered.length === 0) {
         grid.innerHTML = '<p style="text-align:center;color:var(--gray);padding:40px 0;">Aucun produit ne correspond à votre recherche.</p>';
         return;
@@ -154,17 +143,12 @@ function applyFiltersAndRender(categoryFilter = 'all', searchText = '') {
 
     let html = '';
     filtered.forEach(p => {
-        const mediaHtml = p.media ? (p.media.startsWith('data:video') ?
-            `<video src="${p.media}" muted loop></video>` :
-            `<img src="${p.media}" alt="${p.nom}" />`) :
-            `<div class="img-placeholder"><i class="fas fa-seedling"></i><span>${p.nom}</span></div>`;
-        
+        const mediaHtml = p.media ? (p.media.startsWith('data:video') ? `<video src="${p.media}" muted loop></video>` : `<img src="${p.media}" alt="${p.nom}" />`) : `<div class="img-placeholder"><i class="fas fa-seedling"></i><span>${p.nom}</span></div>`;
         const stock = p.stock || 0;
         const stockClass = getStockClass(stock);
         const stockLabel = getStockLabel(stock);
         const disabled = stock <= 0 ? 'disabled' : '';
         const btnText = stock <= 0 ? 'Rupture de stock' : 'Ajouter au panier';
-
         html += `
             <div class="product-card" data-id="${p.id}">
                 <div class="product-image">${mediaHtml}<span class="product-tag">${p.categorie}</span></div>
@@ -183,7 +167,6 @@ function applyFiltersAndRender(categoryFilter = 'all', searchText = '') {
         `;
     });
     grid.innerHTML = html;
-
     grid.querySelectorAll('.add-to-cart').forEach(btn => {
         btn.addEventListener('click', function() {
             if (this.disabled) return;
@@ -198,10 +181,8 @@ function applyFiltersAndRender(categoryFilter = 'all', searchText = '') {
 function toggleReviews(productId) {
     let existingSection = document.getElementById(`reviews_section_${productId}`);
     if (existingSection) { existingSection.remove(); return; }
-
     const card = document.querySelector(`.product-card[data-id="${productId}"]`);
     if (!card) return;
-
     const section = document.createElement('div');
     section.id = `reviews_section_${productId}`;
     section.className = 'reviews-section';
@@ -216,39 +197,27 @@ async function loadReviews(productId, containerId) {
     try {
         const reviews = await apiRequest(`/reviews/product/${productId}`);
         let html = `<h4>Avis clients (${reviews.length})</h4>`;
-        
         if (reviews.length === 0) {
             html += `<p style="font-size:0.85rem;color:gray;margin-bottom:10px;">Aucun avis. Soyez le premier !</p>`;
         } else {
             reviews.forEach(r => {
                 let stars = '';
                 for(let i=0; i<5; i++) stars += `<i class="fas fa-star ${i < r.rating ? 'active' : ''}"></i>`;
-                html += `
-                    <div class="review-item">
-                        <div class="review-header"><span class="review-author">${r.client_name}</span><span class="review-stars">${stars}</span></div>
-                        <p class="review-comment">"${r.comment}"</p>
-                    </div>`;
+                html += `<div class="review-item"><div class="review-header"><span class="review-author">${r.client_name}</span><span class="review-stars">${stars}</span></div><p class="review-comment">"${r.comment}"</p></div>`;
             });
         }
-
         html += `
             <div class="add-review-form">
                 <h5>Laisser un avis :</h5>
                 <input type="text" id="revName_${productId}" placeholder="Votre nom" required>
                 <div class="star-rating" id="stars_${productId}">
-                    <i class="fas fa-star" data-value="1"></i>
-                    <i class="fas fa-star" data-value="2"></i>
-                    <i class="fas fa-star" data-value="3"></i>
-                    <i class="fas fa-star" data-value="4"></i>
-                    <i class="fas fa-star" data-value="5"></i>
+                    <i class="fas fa-star" data-value="1"></i><i class="fas fa-star" data-value="2"></i><i class="fas fa-star" data-value="3"></i><i class="fas fa-star" data-value="4"></i><i class="fas fa-star" data-value="5"></i>
                 </div>
                 <input type="hidden" id="rating_${productId}" value="5">
                 <textarea id="revComment_${productId}" placeholder="Votre avis..." required></textarea>
                 <button class="btn btn-sm btn-primary" onclick="submitReview(${productId})">Publier</button>
             </div>`;
-
         container.innerHTML = html;
-
         const starContainer = document.getElementById(`stars_${productId}`);
         starContainer.addEventListener('click', (e) => {
             if (e.target.tagName === 'I') {
@@ -259,32 +228,22 @@ async function loadReviews(productId, containerId) {
                 });
             }
         });
-    } catch (error) {
-        container.innerHTML = `<p style="color:red;font-size:0.8rem;">Erreur chargement des avis.</p>`;
-    }
+    } catch (error) { container.innerHTML = `<p style="color:red;font-size:0.8rem;">Erreur chargement des avis.</p>`; }
 }
 
 async function submitReview(productId) {
     const name = document.getElementById(`revName_${productId}`).value.trim();
     const rating = document.getElementById(`rating_${productId}`).value;
     const comment = document.getElementById(`revComment_${productId}`).value.trim();
-
     if (!name || !comment) { alert("Veuillez remplir votre nom et votre commentaire."); return; }
-
     try {
         await apiRequest('/reviews', 'POST', { product_id: productId, client_name: name, rating: parseInt(rating), comment: comment });
         loadReviews(productId, `reviews_${productId}`);
         alert("✅ Merci pour votre avis !");
-    } catch (error) {
-        alert("Erreur : " + error.message);
-    }
+    } catch (error) { alert("Erreur : " + error.message); }
 }
 
-// Événements Recherche et Filtres
-document.getElementById('searchInput').addEventListener('input', function() {
-    applyFiltersAndRender(currentCategoryFilter, this.value);
-});
-
+document.getElementById('searchInput').addEventListener('input', function() { applyFiltersAndRender(currentCategoryFilter, this.value); });
 document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', function() {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -322,13 +281,9 @@ function updateCheckoutSummary() {
         subtotal += st;
         html += `<div class="line"><span>${item.nom} (×${item.quantite})</span><span>${formatPrice(st)}</span></div>`;
     });
-    
     let discountValue = (subtotal * appliedDiscount) / 100;
     let finalTotal = subtotal - discountValue;
-
-    if (appliedDiscount > 0) {
-        html += `<div class="line" style="color: #2e7d32;"><span>Réduction (${appliedDiscount}%)</span><span>-${formatPrice(discountValue)}</span></div>`;
-    }
+    if (appliedDiscount > 0) html += `<div class="line" style="color: #2e7d32;"><span>Réduction (${appliedDiscount}%)</span><span>-${formatPrice(discountValue)}</span></div>`;
     html += `<div class="line total"><span>Total à payer</span><span>${formatPrice(finalTotal)}</span></div>`;
     summary.innerHTML = html;
 }
@@ -336,9 +291,7 @@ function updateCheckoutSummary() {
 document.getElementById('applyPromoBtn').addEventListener('click', async () => {
     const code = document.getElementById('promoCodeInput').value.trim();
     const msg = document.getElementById('promoMessage');
-    
     if (!code) { msg.textContent = "Veuillez saisir un code."; msg.style.color = "red"; return; }
-
     try {
         const data = await apiRequest('/promos/verify', 'POST', { code });
         appliedDiscount = data.discount;
@@ -346,17 +299,12 @@ document.getElementById('applyPromoBtn').addEventListener('click', async () => {
         msg.style.color = "#2e7d32";
         updateCheckoutSummary();
     } catch (error) {
-        appliedDiscount = 0;
-        msg.textContent = error.message;
-        msg.style.color = "red";
-        updateCheckoutSummary();
+        appliedDiscount = 0; msg.textContent = error.message; msg.style.color = "red"; updateCheckoutSummary();
     }
 });
 
 document.getElementById('checkoutClose').addEventListener('click', closeCheckout);
-document.getElementById('cartOverlay').addEventListener('click', () => {
-    if (document.getElementById('checkoutModal').classList.contains('active')) closeCheckout();
-});
+document.getElementById('cartOverlay').addEventListener('click', () => { if (document.getElementById('checkoutModal').classList.contains('active')) closeCheckout(); });
 
 function closeCheckout() {
     document.getElementById('checkoutModal').classList.remove('active');
@@ -375,9 +323,7 @@ document.getElementById('checkoutPayment').addEventListener('change', function()
         container.innerHTML = `<div class="payment-fields"><h5><i class="fas fa-credit-card"></i> Carte bancaire</h5><div class="form-group"><label>Numéro de carte</label><input type="text" id="cbNumber" placeholder="1234 5678 9012 3456" maxlength="19" required /></div><div class="form-row"><div class="form-group"><label>Expiration</label><input type="text" id="cbExpiry" placeholder="MM/AA" maxlength="5" required /></div><div class="form-group"><label>CVV</label><input type="text" id="cbCvv" placeholder="123" maxlength="4" required /></div></div><div class="form-group"><label>Nom sur la carte</label><input type="text" id="cbName" placeholder="NOM PRENOM" required /></div></div>`;
     } else if (val === 'especes') {
         container.innerHTML = `<div class="payment-fields"><h5><i class="fas fa-money-bill-wave"></i> Espèces à la livraison</h5><p style="font-size:0.9rem;color:var(--gray);">Vous paierez en espèces au moment de la livraison.</p></div>`;
-    } else {
-        container.innerHTML = '';
-    }
+    } else { container.innerHTML = ''; }
 });
 
 document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
@@ -386,9 +332,8 @@ document.getElementById('checkoutForm').addEventListener('submit', async (e) => 
     const phone = document.getElementById('checkoutPhone').value.trim();
     const address = document.getElementById('checkoutAddress').value.trim();
     const payment = document.getElementById('checkoutPayment').value;
-
     if (!name || !phone || !address || !payment) { alert('Veuillez remplir tous les champs obligatoires.'); return; }
-
+    
     let paymentDetails = {};
     if (payment === 'mobile_money') {
         const operator = document.getElementById('pmOperator')?.value;
@@ -412,18 +357,13 @@ document.getElementById('checkoutForm').addEventListener('submit', async (e) => 
 
     try {
         await apiRequest('/orders', 'POST', { clientName: name, phone, address, items, total, payment, paymentDetails, promoCode, discountAmount });
-        cart = [];
-        appliedDiscount = 0;
-        saveCart();
-        closeCheckout();
-        closeCart();
+        cart = []; appliedDiscount = 0; saveCart();
+        closeCheckout(); closeCart();
         document.getElementById('checkoutForm').reset();
         document.getElementById('paymentDetails').innerHTML = '';
         alert('✅ Commande enregistrée ! Merci.');
         renderClientProducts();
-    } catch (error) {
-        alert('Erreur : ' + error.message);
-    }
+    } catch (error) { alert('Erreur : ' + error.message); }
 });
 
 // ============================================================
@@ -432,8 +372,7 @@ document.getElementById('checkoutForm').addEventListener('submit', async (e) => 
 async function loginAdmin(username, password) {
     try {
         const data = await apiRequest('/auth/login', 'POST', { username, password });
-        token = data.token;
-        currentAdmin = data.admin;
+        token = data.token; currentAdmin = data.admin;
         sessionStorage.setItem('adaToken', token);
         showAdminUI();
         return true;
@@ -441,11 +380,8 @@ async function loginAdmin(username, password) {
 }
 
 function logoutAdmin() {
-    sessionStorage.removeItem('adaToken');
-    token = null;
-    currentAdmin = null;
-    hideAdminUI();
-    window.location.hash = '#home';
+    sessionStorage.removeItem('adaToken'); token = null; currentAdmin = null;
+    hideAdminUI(); window.location.hash = '#home';
 }
 
 function checkSession() {
@@ -464,10 +400,7 @@ function showAdminUI() {
     document.getElementById('about').style.display = 'none';
     document.getElementById('contact').style.display = 'none';
     document.getElementById('adminSection').style.display = 'block';
-    renderAdminProducts();
-    renderOrders();
-    renderCustomers();
-    renderAdmins();
+    renderAdminProducts(); renderOrders(); renderCustomers(); renderAdmins();
 }
 
 function hideAdminUI() {
@@ -494,9 +427,7 @@ document.getElementById('adminLoginForm').addEventListener('submit', async (e) =
         document.getElementById('adminLoginModal').classList.remove('active');
         document.getElementById('loginError').style.display = 'none';
         document.getElementById('adminLoginForm').reset();
-    } else {
-        document.getElementById('loginError').style.display = 'block';
-    }
+    } else { document.getElementById('loginError').style.display = 'block'; }
 });
 
 document.getElementById('adminLogoutBtn').addEventListener('click', logoutAdmin);
@@ -511,7 +442,6 @@ document.getElementById('togglePassword').addEventListener('click', function() {
     else { passwordInput.type = 'password'; icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
 });
 
-// --- MOT DE PASSE OUBLIÉ ---
 document.getElementById('forgotPasswordLink').addEventListener('click', (e) => {
     e.preventDefault();
     document.getElementById('adminLoginModal').classList.remove('active');
@@ -588,7 +518,6 @@ function openProductModal(id = null) {
     const overlay = document.getElementById('productModalOverlay');
     const form = document.getElementById('productForm');
     const title = document.getElementById('productModalTitle');
-
     if (id) {
         apiRequest(`/products/${id}`, 'GET').then(product => {
             title.textContent = 'Modifier le produit';
@@ -627,14 +556,11 @@ document.getElementById('productForm').addEventListener('submit', async function
     const description = document.getElementById('pDescription').value.trim();
     const stock = parseInt(document.getElementById('pStock').value) || 0;
     const file = document.getElementById('pFile').files[0];
-
     if (!nom || !prix) { alert('Nom et prix sont obligatoires.'); return; }
     let mediaData = null;
     if (file) { mediaData = await new Promise((resolve) => { const reader = new FileReader(); reader.onload = (e) => resolve(e.target.result); reader.readAsDataURL(file); }); }
-
     const productData = { nom, prix, categorie, description, stock };
     if (mediaData) productData.media = mediaData;
-
     try {
         if (id) { await apiRequest(`/products/${id}`, 'PUT', productData); }
         else { await apiRequest('/products', 'POST', productData); }
@@ -674,7 +600,6 @@ function openAdminModal(id = null) {
     const overlay = document.getElementById('adminModalOverlay');
     const form = document.getElementById('adminForm');
     const title = document.getElementById('adminModalTitle');
-
     if (id) {
         apiRequest('/admins').then(admins => {
             const admin = admins.find(a => a.id === id);
@@ -708,7 +633,6 @@ document.getElementById('adminForm').addEventListener('submit', async function(e
     if (!nom || !email) { alert('Nom et email sont obligatoires.'); return; }
     const adminData = { nom, email, role };
     if (password) adminData.password = password;
-
     try {
         if (id) { await apiRequest(`/admins/${id}`, 'PUT', adminData); }
         else { if (!password) { alert('Le mot de passe est requis pour un nouvel admin.'); return; } await apiRequest('/admins', 'POST', adminData); }
@@ -720,23 +644,43 @@ document.getElementById('adminForm').addEventListener('submit', async function(e
 document.getElementById('addAdminBtn').addEventListener('click', () => openAdminModal());
 
 // ============================================================
-// 9. ADMIN : COMMANDES
+// 9. ADMIN : COMMANDES (AVEC LIEN PDF)
 // ============================================================
 async function renderOrders() {
     try {
         const orders = await apiRequest('/orders');
         const container = document.getElementById('ordersList');
         if (orders.length === 0) { container.innerHTML = '<p>Aucune commande.</p>'; return; }
-        let html = `<table class="admin-table"><thead><tr><th>#</th><th>Client</th><th>Téléphone</th><th>Adresse</th><th>Articles</th><th>Total</th><th>Paiement</th><th>Statut</th><th>Actions</th></tr></thead><tbody>`;
+        
+        // Ajout de la colonne "Facture"
+        let html = `<table class="admin-table"><thead><tr><th>#</th><th>Client</th><th>Téléphone</th><th>Total</th><th>Paiement</th><th>Statut</th><th>Actions</th><th>Facture</th></tr></thead><tbody>`;
+        
         orders.forEach(order => {
             const statusClass = 'status-' + order.status.replace(' ', '-');
-            const items = order.items.map(i => `${i.nom} (×${i.quantite})`).join(', ');
             const paymentLabels = { mobile_money: 'Mobile Money', carte_bancaire: 'Carte bancaire', especes: 'Espèces' };
             const paymentClass = 'payment-' + (order.payment || 'especes');
             const paymentLabel = paymentLabels[order.payment] || 'Non spécifié';
             const promoText = order.promo_code ? ` <br><small style="color:green;">Code: ${order.promo_code}</small>` : '';
 
-            html += `<tr><td>${order.id}</td><td>${order.clientName}</td><td>${order.phone}</td><td>${order.address}</td><td>${items}</td><td>${formatPrice(order.total)}${promoText}</td><td><span class="payment-badge ${paymentClass}">${paymentLabel}</span></td><td><span class="status-badge ${statusClass}">${order.status}</span></td><td class="admin-actions"><button class="btn-sm btn-secondary" data-id="${order.id}" data-status="en attente">En attente</button><button class="btn-sm" style="background:#dbeafe;color:#1e40af;" data-id="${order.id}" data-status="confirmée">Confirmée</button><button class="btn-sm" style="background:#d1fae5;color:#065f46;" data-id="${order.id}" data-status="livrée">Livrée</button><button class="btn-sm btn-danger" data-id="${order.id}" data-status="delete">Supprimer</button></td></tr>`;
+            // Bouton de téléchargement PDF
+            const pdfLink = `<a href="/factures/facture_${order.id}.pdf" target="_blank" class="btn btn-sm" style="background:#fee2e2;color:#b91c1c; text-decoration:none; display:inline-flex; align-items:center; gap:5px;"><i class="fas fa-file-pdf"></i> PDF</a>`;
+
+            html += `
+                <tr>
+                    <td>${order.id}</td>
+                    <td>${order.clientName}</td>
+                    <td>${order.phone}</td>
+                    <td>${formatPrice(order.total)}${promoText}</td>
+                    <td><span class="payment-badge ${paymentClass}">${paymentLabel}</span></td>
+                    <td><span class="status-badge ${statusClass}">${order.status}</span></td>
+                    <td class="admin-actions">
+                        <button class="btn-sm btn-secondary" data-id="${order.id}" data-status="en attente">En attente</button>
+                        <button class="btn-sm" style="background:#dbeafe;color:#1e40af;" data-id="${order.id}" data-status="confirmée">Confirmée</button>
+                        <button class="btn-sm" style="background:#d1fae5;color:#065f46;" data-id="${order.id}" data-status="livrée">Livrée</button>
+                        <button class="btn-sm btn-danger" data-id="${order.id}" data-status="delete">Supprimer</button>
+                    </td>
+                    <td>${pdfLink}</td>
+                </tr>`;
         });
         html += '</tbody></table>';
         container.innerHTML = html;

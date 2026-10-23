@@ -8,7 +8,11 @@ const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cors({ origin: '*' }));
+
+// Servir le frontend
 app.use(express.static(path.join(__dirname, '../frontend')));
+// Servir le dossier des factures PDF
+app.use('/factures', express.static(path.join(__dirname, 'factures')));
 
 // Routes API
 app.use('/api/auth', require('./routes/auth'));
@@ -17,7 +21,7 @@ app.use('/api/orders', require('./routes/orders'));
 app.use('/api/customers', require('./routes/customers'));
 app.use('/api/admins', require('./routes/admins'));
 app.use('/api/promos', require('./routes/promos'));
-app.use('/api/reviews', require('./routes/reviews')); // <-- NOUVEAU
+app.use('/api/reviews', require('./routes/reviews'));
 
 app.get('/api/test', (req, res) => {
     res.json({ message: 'API ADA AGRO fonctionne correctement !' });
