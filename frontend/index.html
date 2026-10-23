@@ -14,19 +14,14 @@
     <!-- ===== HEADER ===== -->
     <header id="header">
         <div class="container header-inner">
-            <!-- Logo centré et cliquable -->
             <div class="logo">
                 <a href="#home" title="Retour à l'accueil">
                     <img src="logo.jpeg" alt="ADA AGRO-BUSINESS" class="logo-img" />
                 </a>
             </div>
-
-            <!-- Bouton menu mobile (positionné à droite) -->
             <button class="mobile-toggle" id="mobileToggle" aria-label="Menu">
                 <i class="fas fa-bars"></i>
             </button>
-
-            <!-- Navigation -->
             <nav id="mainNav">
                 <a href="#home" class="active">Accueil</a>
                 <a href="#products">Produits</a>
@@ -34,8 +29,6 @@
                 <a href="#contact" class="nav-cta">Contact</a>
                 <a href="#" id="adminNavLink" class="admin-link">Connexion</a>
             </nav>
-
-            <!-- Panier -->
             <button class="cart-icon-wrap" id="cartToggle" aria-label="Panier">
                 <i class="fas fa-shopping-cart"></i>
                 <span class="cart-count" id="cartCount">0</span>
@@ -80,6 +73,16 @@
                 <p>Semences de qualité, intrants efficaces et matériel robuste pour vos cultures et espaces verts.</p>
                 <div class="accent-line"></div>
             </div>
+
+            <!-- NOUVELLE BARRE DE RECHERCHE -->
+            <div class="search-container" style="margin-bottom: 20px; display: flex; justify-content: center;">
+                <div style="position: relative; width: 100%; max-width: 500px;">
+                    <i class="fas fa-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--gray);"></i>
+                    <input type="text" id="searchInput" placeholder="Rechercher un produit..." 
+                           style="width: 100%; padding: 14px 20px 14px 45px; border-radius: 40px; border: 1px solid rgba(26,94,26,0.2); outline: none; font-size: 1rem;">
+                </div>
+            </div>
+
             <div class="filter-bar">
                 <button class="filter-btn active" data-filter="all">Tous</button>
                 <button class="filter-btn" data-filter="semences">Semences</button>
@@ -182,7 +185,8 @@
         </div>
     </section>
 
-    <!-- ===== MODALS PRODUITS & ADMIN ===== -->
+    <!-- ===== MODALS ===== -->
+    <!-- (Inchangés : Produit, Admin, Connexion, Mot de passe oublié, Nouveau mot de passe) -->
     <div class="modal-overlay" id="productModalOverlay">
         <div class="modal-box">
             <button class="modal-close" id="productModalClose"><i class="fas fa-times"></i></button>
@@ -215,7 +219,6 @@
         </div>
     </div>
 
-    <!-- ===== MODAL : CONNEXION ===== -->
     <div class="modal-overlay" id="adminLoginModal">
         <div class="modal-box" style="max-width:420px;">
             <h3>Connexion</h3>
@@ -231,49 +234,36 @@
                     <button type="button" id="togglePassword" class="password-toggle"><i class="fas fa-eye"></i></button>
                 </div>
                 <div id="loginError" style="color:#b91c1c; font-size:0.9rem; display:none; margin-bottom:12px;">Identifiants incorrects.</div>
-                
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                     <a href="#" id="forgotPasswordLink" style="font-size: 0.85rem; color: var(--primary); text-decoration: underline;">Mot de passe oublié ?</a>
                 </div>
-
                 <button type="submit" class="btn btn-secondary" style="width:100%; justify-content:center;">Se connecter</button>
             </form>
         </div>
     </div>
 
-    <!-- ===== MODAL : MOT DE PASSE OUBLIÉ (Étape 1) ===== -->
     <div class="modal-overlay" id="forgotPasswordModal">
         <div class="modal-box" style="max-width:420px;">
             <button class="modal-close" id="forgotPasswordClose"><i class="fas fa-times"></i></button>
             <h3>Mot de passe oublié</h3>
             <p>Saisissez votre email pour recevoir un code de réinitialisation.</p>
             <form id="forgotPasswordForm">
-                <div class="form-group">
-                    <label>Adresse email</label>
-                    <input type="email" id="resetEmail" placeholder="ex: superadmin@ada.agro" required />
-                </div>
+                <div class="form-group"><label>Adresse email</label><input type="email" id="resetEmail" placeholder="ex: superadmin@ada.agro" required /></div>
                 <div id="forgotPasswordError" style="color:#b91c1c; font-size:0.9rem; display:none; margin-bottom:12px;">Erreur.</div>
-                <div id="forgotPasswordSuccess" style="color:var(--primary); font-size:0.9rem; display:none; margin-bottom:12px;">Code envoyé ! Vérifiez la console du backend.</div>
+                <div id="forgotPasswordSuccess" style="color:var(--primary); font-size:0.9rem; display:none; margin-bottom:12px;">Code envoyé !</div>
                 <button type="submit" class="btn btn-secondary" style="width:100%; justify-content:center;">Envoyer le code</button>
             </form>
         </div>
     </div>
 
-    <!-- ===== MODAL : NOUVEAU MOT DE PASSE (Étape 2) ===== -->
     <div class="modal-overlay" id="resetPasswordModal">
         <div class="modal-box" style="max-width:420px;">
             <button class="modal-close" id="resetPasswordClose"><i class="fas fa-times"></i></button>
             <h3>Nouveau mot de passe</h3>
             <p>Saisissez le code reçu et votre nouveau mot de passe.</p>
             <form id="resetPasswordForm">
-                <div class="form-group">
-                    <label>Code de réinitialisation</label>
-                    <input type="text" id="resetCode" placeholder="123456" required />
-                </div>
-                <div class="form-group" style="position: relative;">
-                    <label>Nouveau mot de passe</label>
-                    <input type="password" id="newPassword" placeholder="••••••••" required />
-                </div>
+                <div class="form-group"><label>Code de réinitialisation</label><input type="text" id="resetCode" placeholder="123456" required /></div>
+                <div class="form-group" style="position: relative;"><label>Nouveau mot de passe</label><input type="password" id="newPassword" placeholder="••••••••" required /></div>
                 <div id="resetPasswordError" style="color:#b91c1c; font-size:0.9rem; display:none; margin-bottom:12px;">Erreur.</div>
                 <button type="submit" class="btn btn-secondary" style="width:100%; justify-content:center;">Réinitialiser le mot de passe</button>
             </form>
@@ -291,13 +281,25 @@
         </div>
     </div>
 
+    <!-- NOUVEAU : MODAL CHECKOUT AVEC CODE PROMO -->
     <div class="modal-overlay" id="checkoutModal">
         <div class="modal-box" style="max-width:560px;">
             <button class="modal-close" id="checkoutClose"><i class="fas fa-times"></i></button>
             <h3>Finaliser votre commande</h3>
             <p>Remplissez vos coordonnées et choisissez votre mode de paiement.</p>
             <div id="checkoutSummary"></div>
+            
             <form id="checkoutForm">
+                <!-- Code Promo -->
+                <div class="form-group" style="display: flex; gap: 10px; align-items: flex-end; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <label>Code Promo (Optionnel)</label>
+                        <input type="text" id="promoCodeInput" placeholder="Ex: ADA10" style="text-transform: uppercase;">
+                    </div>
+                    <button type="button" id="applyPromoBtn" class="btn btn-outline" style="padding: 12px 20px;">Appliquer</button>
+                </div>
+                <p id="promoMessage" style="font-size: 0.85rem; margin-bottom: 15px; margin-top: -10px;"></p>
+
                 <div class="form-row">
                     <div class="form-group"><label>Nom complet</label><input type="text" id="checkoutName" required /></div>
                     <div class="form-group"><label>Téléphone</label><input type="tel" id="checkoutPhone" required /></div>
@@ -313,7 +315,7 @@
                     </select>
                 </div>
                 <div id="paymentDetails"></div>
-                <button type="submit" class="btn btn-secondary" style="width:100%; justify-content:center;">Confirmer</button>
+                <button type="submit" class="btn btn-secondary" style="width:100%; justify-content:center;">Confirmer la commande</button>
             </form>
         </div>
     </div>
