@@ -1128,3 +1128,63 @@ footer {
 .payment-mobile_money { background: #dbeafe; color: #1e40af; }
 .payment-carte_bancaire { background: #fce7f3; color: #9d174d; }
 .payment-especes { background: #fef3c7; color: #b45309; }
+/* ===== AVIS CLIENTS (REVIEWS) ===== */
+.reviews-section {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(26, 94, 26, 0.1);
+}
+.reviews-section h4 {
+    font-size: 1.1rem;
+    color: var(--primary-dark);
+    margin-bottom: 15px;
+}
+.review-item {
+    background: #fdfdfd;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+.review-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+.review-author {
+    font-weight: 600;
+    color: var(--primary-dark);
+}
+.review-stars {
+    color: var(--secondary);
+}
+.review-comment {
+    font-size: 0.85rem;
+    color: var(--gray);
+    font-style: italic;
+}
+.add-review-form {
+    margin-top: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.add-review-form input, .add-review-form textarea {
+    padding: 8px;
+    border: 1px solid rgba(26, 94, 26, 0.2);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.85rem;
+}
+.add-review-form textarea { resize: vertical; min-height: 60px; }
+.star-rating {
+    display: flex;
+    gap: 5px;
+    font-size: 1.2rem;
+    color: #ccc;
+    cursor: pointer;
+}
+.star-rating i.active {
+    color: var(--secondary);
+}
