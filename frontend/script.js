@@ -11,6 +11,8 @@ let cart = JSON.parse(sessionStorage.getItem('adaCart')) || [];
 let allProductsData = []; 
 let appliedDiscount = 0;
 let currentCategoryFilter = 'all';
+let deliveryZones = []; // Stockera les zones de livraison
+let selectedDeliveryFee = 0; // Frais de livraison actuels
 
 // ============================================================
 // 2. FONCTIONS UTILITAIRES
@@ -47,8 +49,39 @@ function getStockLabel(stock) {
 }
 
 // ============================================================
-// 3. GESTION DU PANIER
+// 3. GESTION DU PANIER & LIVRAISON
 // ============================================================
+async function loadDeliveryZones() {
+    try {
+        deliveryZones = await apiRequest('/delivery');
+        const select = document.getElementById('checkoutDeliveryZone');
+        if (!select) return; // Sécurité si l'élément n'est pas encore chargé
+        
+        select.innerHTML = '<option value="">-- Choisissez votre zone --</option>';
+        deliveryZones.forEach(zone => {
+            select.innerHTML += `<option value="${zone.id}" data-price="${zone.price}" data-name="${zone.name}">${zone.name} (+${formatPrice(zone.price)})</option>`;
+        });
+    } catch (error) {
+        console.error("Erreur lors du chargement des zones:", error);
+    }
+}
+
+// Écouter le changement de zone de livraison
+document.addEventListener('DOMContentLoaded', () => {
+    const zoneSelect = document.getElementById('checkoutDeliveryZone');
+    if (zoneSelect) {
+        zoneSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption.value) {
+                selectedDeliveryFee = parseFloat(selectedOption.dataset.price);
+            } else {
+                selectedDeliveryFee = 0;
+            }
+            updateCheckoutSummary();
+        });
+    }
+});
+
 function saveCart() {
     sessionStorage.setItem('adaCart', JSON.stringify(cart));
     updateCartUI();
@@ -320,13 +353,15 @@ if (document.getElementById('trackOrderForm')) {
 }
 
 // ============================================================
-// 5. COMMANDE + PAIEMENT + CODE PROMO
+// 5. COMMANDE + PAIEMENT + CODE PROMO + LIVRAISON
 // ============================================================
 document.getElementById('checkoutBtn').addEventListener('click', () => {
     if (cart.length === 0) { alert('Votre panier est vide.'); return; }
     appliedDiscount = 0;
+    selectedDeliveryFee = 0;
     document.getElementById('promoCodeInput').value = '';
     document.getElementById('promoMessage').textContent = '';
+    document.getElementById('checkoutDeliveryZone').value = '';
     openCheckout();
 });
 
@@ -349,11 +384,16 @@ function updateCheckoutSummary() {
     });
     
     let discountValue = (subtotal * appliedDiscount) / 100;
-    let finalTotal = subtotal - discountValue;
+    let finalTotal = subtotal - discountValue + selectedDeliveryFee;
 
     if (appliedDiscount > 0) {
         html += `<div class="line" style="color: #2e7d32;"><span>Réduction (${appliedDiscount}%)</span><span>-${formatPrice(discountValue)}</span></div>`;
     }
+    
+    if (selectedDeliveryFee > 0) {
+        html += `<div class="line"><span>Frais de livraison</span><span>+${formatPrice(selectedDeliveryFee)}</span></div>`;
+    }
+    
     html += `<div class="line total"><span>Total à payer</span><span>${formatPrice(finalTotal)}</span></div>`;
     summary.innerHTML = html;
 }
@@ -411,8 +451,17 @@ document.getElementById('checkoutForm').addEventListener('submit', async (e) => 
     const phone = document.getElementById('checkoutPhone').value.trim();
     const address = document.getElementById('checkoutAddress').value.trim();
     const payment = document.getElementById('checkoutPayment').value;
+    const zoneSelect = document.getElementById('checkoutDeliveryZone');
+    const zoneId = zoneSelect.value;
+    
+    if (!name || !phone || !address || !payment || !zoneId) { 
+        alert('Veuillez remplir tous les champs obligatoires, y compris la zone de livraison.'); 
+        return; 
+    }
 
-    if (!name || !phone || !address || !payment) { alert('Veuillez remplir tous les champs obligatoires.'); return; }
+    const selectedOption = zoneSelect.options[zoneSelect.selectedIndex];
+    const deliveryZoneName = selectedOption.dataset.name;
+    const deliveryFeeValue = parseFloat(selectedOption.dataset.price);
 
     let paymentDetails = {};
     if (payment === 'mobile_money') {
@@ -430,15 +479,20 @@ document.getElementById('checkoutForm').addEventListener('submit', async (e) => 
     }
 
     let subtotal = cart.reduce((sum, item) => sum + item.prix * item.quantite, 0);
-    let total = subtotal - (subtotal * appliedDiscount / 100);
     let discountAmount = subtotal * appliedDiscount / 100;
+    let total = subtotal - discountAmount + deliveryFeeValue;
+    
     const items = cart.map(i => ({ id: i.id, nom: i.nom, quantite: i.quantite, prix: i.prix }));
     const promoCode = document.getElementById('promoCodeInput').value.trim().toUpperCase() || null;
 
     try {
-        await apiRequest('/orders', 'POST', { clientName: name, phone, address, items, total, payment, paymentDetails, promoCode, discountAmount });
+        await apiRequest('/orders', 'POST', { 
+            clientName: name, phone, address, items, total, payment, paymentDetails, promoCode, discountAmount,
+            deliveryZone: deliveryZoneName, deliveryFee: deliveryFeeValue
+        });
         cart = [];
         appliedDiscount = 0;
+        selectedDeliveryFee = 0;
         saveCart();
         closeCheckout();
         closeCart();
@@ -587,7 +641,6 @@ async function renderDashboard() {
     try {
         const stats = await apiRequest('/stats');
         
-        // Cartes de statistiques
         const statsHtml = `
             <div class="admin-card" style="text-align: center; border-top: 4px solid #10b981;">
                 <h5 style="color: var(--gray); margin-bottom: 10px;">Chiffre d'Affaires</h5>
@@ -604,7 +657,6 @@ async function renderDashboard() {
         `;
         document.getElementById('dashboardStats').innerHTML = statsHtml;
 
-        // Liste des ruptures
         if (stats.produitsEnRupture.length === 0) {
             document.getElementById('dashboardRuptures').innerHTML = '<p style="color: green;">✅ Aucun produit en rupture de stock.</p>';
         } else {
@@ -619,7 +671,6 @@ async function renderDashboard() {
             document.getElementById('dashboardRuptures').innerHTML = html;
         }
 
-        // Top Produits
         if (stats.topProduits.length === 0) {
             document.getElementById('dashboardTopProduits').innerHTML = '<p>Aucune vente enregistrée pour le moment.</p>';
         } else {
@@ -887,7 +938,6 @@ document.querySelectorAll('.admin-tabs button[data-tab]').forEach(tab => {
         document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
         document.getElementById('panel' + target.charAt(0).toUpperCase() + target.slice(1)).classList.add('active');
         
-        // Charger les données en fonction de l'onglet
         if (target === 'dashboard') renderDashboard();
         else if (target === 'products') renderAdminProducts();
         else if (target === 'orders') renderOrders();
@@ -955,6 +1005,7 @@ document.getElementById('contactForm').addEventListener('submit', (e) => {
 // 14. INITIALISATION
 // ============================================================
 (async function init() {
+    await loadDeliveryZones(); // Charger les zones de livraison
     checkSession();
     await renderClientProducts();
     renderCartItems();

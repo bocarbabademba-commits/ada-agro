@@ -161,7 +161,6 @@
                 <div class="accent-line"></div>
             </div>
             
-            <!-- NOUVEAU : ONGLET VUE D'ENSEMBLE -->
             <div class="admin-tabs">
                 <button class="active" data-tab="dashboard">Vue d'ensemble</button>
                 <button data-tab="products">Produits</button>
@@ -171,39 +170,24 @@
                 <button id="adminLogoutBtn" style="margin-left:auto; color:#b91c1c;">Déconnexion</button>
             </div>
 
-            <!-- PANNEAU DASHBOARD -->
             <div class="admin-panel active" id="panelDashboard">
-                <div id="dashboardStats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
-                    <!-- Les cartes de stats seront injectées ici par JS -->
-                </div>
-                
-                <div class="admin-card" style="margin-bottom: 20px;">
-                    <h4 style="color: #b45309;"><i class="fas fa-exclamation-triangle"></i> Alertes de stock</h4>
-                    <div id="dashboardRuptures"></div>
-                </div>
-
-                <div class="admin-card">
-                    <h4 style="color: #1e40af;"><i class="fas fa-chart-line"></i> Top 5 des produits les plus vendus</h4>
-                    <div id="dashboardTopProduits"></div>
-                </div>
+                <div id="dashboardStats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;"></div>
+                <div class="admin-card" style="margin-bottom: 20px;"><h4 style="color: #b45309;"><i class="fas fa-exclamation-triangle"></i> Alertes de stock</h4><div id="dashboardRuptures"></div></div>
+                <div class="admin-card"><h4 style="color: #1e40af;"><i class="fas fa-chart-line"></i> Top 5 des produits les plus vendus</h4><div id="dashboardTopProduits"></div></div>
             </div>
 
-            <!-- PANNEAU PRODUITS -->
             <div class="admin-panel" id="panelProducts">
                 <div class="admin-card"><h4>Liste des produits <button class="btn btn-sm btn-secondary" id="addProductBtn">+ Ajouter</button></h4><div id="productsList"></div></div>
             </div>
 
-            <!-- PANNEAU COMMANDES -->
             <div class="admin-panel" id="panelOrders">
                 <div class="admin-card"><h4>Commandes</h4><div id="ordersList"></div></div>
             </div>
 
-            <!-- PANNEAU CLIENTS -->
             <div class="admin-panel" id="panelCustomers">
                 <div class="admin-card"><h4>Clients fidèles</h4><div id="customersList"></div><hr><h5>Ajouter un client</h5><div class="add-customer-form"><input type="text" id="newCustomerName" placeholder="Nom" /><input type="tel" id="newCustomerPhone" placeholder="Téléphone" /><button class="btn btn-sm btn-secondary" id="addCustomerBtn">Ajouter</button></div></div>
             </div>
 
-            <!-- PANNEAU ADMINS -->
             <div class="admin-panel" id="panelAdmins">
                 <div class="admin-card"><h4>Gestion des administrateurs <button class="btn btn-sm btn-secondary" id="addAdminBtn">+ Ajouter</button></h4><div id="adminsList"></div></div>
             </div>
@@ -322,6 +306,7 @@
         </div>
     </div>
 
+    <!-- NOUVEAU : MODAL CHECKOUT AVEC ZONE DE LIVRAISON -->
     <div class="modal-overlay" id="checkoutModal">
         <div class="modal-box" style="max-width:560px;">
             <button class="modal-close" id="checkoutClose"><i class="fas fa-times"></i></button>
@@ -343,7 +328,17 @@
                     <div class="form-group"><label>Nom complet</label><input type="text" id="checkoutName" required /></div>
                     <div class="form-group"><label>Téléphone</label><input type="tel" id="checkoutPhone" required /></div>
                 </div>
-                <div class="form-group"><label>Adresse de livraison</label><input type="text" id="checkoutAddress" required /></div>
+                
+                <!-- NOUVEAU : SELECTEUR DE ZONE -->
+                <div class="form-group">
+                    <label>Zone de livraison</label>
+                    <select id="checkoutDeliveryZone" required>
+                        <option value="">Chargement des zones...</option>
+                    </select>
+                </div>
+
+                <div class="form-group"><label>Adresse de livraison (Détails)</label><input type="text" id="checkoutAddress" placeholder="Quartier, rue, repère..." required /></div>
+                
                 <div class="form-group">
                     <label>Mode de paiement</label>
                     <select id="checkoutPayment" required>

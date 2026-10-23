@@ -9,9 +9,7 @@ const router = express.Router();
 const facturesDir = path.join(__dirname, '../factures');
 if (!fs.existsSync(facturesDir)) fs.mkdirSync(facturesDir);
 
-// ==========================================
 // 1. GET : Toutes les commandes (Admin)
-// ==========================================
 router.get('/', auth, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM orders ORDER BY created_at DESC');
@@ -19,9 +17,7 @@ router.get('/', auth, async (req, res) => {
     } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-// ==========================================
 // 2. GET : Suivi de commande par téléphone (Public)
-// ==========================================
 router.get('/track/:phone', async (req, res) => {
     const { phone } = req.params;
     try {
@@ -33,13 +29,16 @@ router.get('/track/:phone', async (req, res) => {
     } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-// ==========================================
 // 3. POST : Créer une commande
-// ==========================================
 router.post('/', async (req, res) => {
-    const { clientName, phone, address, items, total, payment, paymentDetails, promoCode, discountAmount } = req.body;
+    const { 
+        clientName, phone, address, items, total, 
+        payment, paymentDetails, promoCode, discountAmount,
+        deliveryZone, deliveryFee // <-- NOUVEAUX PARAMÈTRES
+    } = req.body;
 
     try {
+        // Vérification des stocks
         for (const item of items) {
             const prodResult = await pool.query('SELECT stock FROM products WHERE id=$1', [item.id]);
             if (prodResult.rows.length === 0) return res.status(400).json({ message: `Produit ${item.nom} introuvable.` });
@@ -48,16 +47,23 @@ router.post('/', async (req, res) => {
             await pool.query('UPDATE products SET stock = stock - $1 WHERE id=$2', [item.quantite, item.id]);
         }
 
+        // Insertion de la commande
         const result = await pool.query(
-            `INSERT INTO orders ("clientName", phone, address, items, total, payment, "paymentDetails", promo_code, discount_amount) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-            [clientName, phone, address, JSON.stringify(items), total, payment, JSON.stringify(paymentDetails || {}), promoCode || null, discountAmount || 0]
+            `INSERT INTO orders (
+                "clientName", phone, address, items, total, payment, "paymentDetails", 
+                promo_code, discount_amount, delivery_zone, delivery_fee
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+            [
+                clientName, phone, address, JSON.stringify(items), total, payment, JSON.stringify(paymentDetails || {}), 
+                promoCode || null, discountAmount || 0, deliveryZone || 'Non spécifié', deliveryFee || 0
+            ]
         );
 
         const newOrder = result.rows[0];
         const invoiceFileName = `facture_${newOrder.id}.pdf`;
         generateInvoicePDF(newOrder, path.join(facturesDir, invoiceFileName));
 
+        // Points de fidélité
         const points = Math.floor(total / 100);
         if (points > 0) {
             const custResult = await pool.query('SELECT * FROM customers WHERE phone=$1', [phone]);
@@ -72,9 +78,7 @@ router.post('/', async (req, res) => {
     } catch (err) { res.status(400).json({ message: err.message }); }
 });
 
-// ==========================================
 // 4. PUT : Changer le statut (Admin)
-// ==========================================
 router.put('/:id', auth, async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
@@ -85,9 +89,7 @@ router.put('/:id', auth, async (req, res) => {
     } catch (err) { res.status(400).json({ message: err.message }); }
 });
 
-// ==========================================
 // 5. DELETE : Supprimer une commande (Admin)
-// ==========================================
 router.delete('/:id', auth, async (req, res) => {
     const { id } = req.params;
     try {
@@ -96,7 +98,7 @@ router.delete('/:id', auth, async (req, res) => {
     } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
-// FONCTION PDF
+// FONCTION PDF MISE À JOUR
 function generateInvoicePDF(order, filePath) {
     const doc = new PDFDocument({ margin: 50 });
     doc.pipe(fs.createWriteStream(filePath));
@@ -110,7 +112,7 @@ function generateInvoicePDF(order, filePath) {
     doc.fontSize(12).text(`Date : ${new Date(order.created_at).toLocaleDateString()}`);
     doc.text(`Client : ${order.clientName}`);
     doc.text(`Téléphone : ${order.phone}`);
-    doc.text(`Adresse : ${order.address}`);
+    doc.text(`Adresse : ${order.address} (Zone: ${order.delivery_zone})`); // Ajout de la zone
     doc.moveDown();
     doc.fontSize(12).text('Détail des achats :', { underline: true });
     doc.moveDown(0.5);
@@ -131,6 +133,8 @@ function generateInvoicePDF(order, filePath) {
     doc.moveDown();
 
     if (order.discount_amount > 0) doc.fontSize(12).fillColor('green').text(`Réduction (${order.promo_code}) : -${order.discount_amount.toLocaleString()} FCFA`, { align: 'right' });
+    if (order.delivery_fee > 0) doc.fontSize(12).fillColor('#000').text(`Frais de livraison (${order.delivery_zone}) : +${order.delivery_fee.toLocaleString()} FCFA`, { align: 'right' });
+    
     doc.fontSize(14).fillColor('#000').text(`TOTAL À PAYER : ${order.total.toLocaleString()} FCFA`, { align: 'right', bold: true });
     doc.moveDown(2);
     doc.fontSize(10).fillColor('gray').text(`Mode de paiement : ${order.payment}`, { align: 'right' });
