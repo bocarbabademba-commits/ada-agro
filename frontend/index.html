@@ -25,7 +25,7 @@
             <nav id="mainNav">
                 <a href="#home" class="active">Accueil</a>
                 <a href="#products">Produits</a>
-                <a href="#" id="trackOrderNavLink">Suivre ma commande</a> <!-- NOUVEAU BOUTON -->
+                <a href="#" id="trackOrderNavLink">Suivre ma commande</a>
                 <a href="#about">À propos</a>
                 <a href="#contact" class="nav-cta">Contact</a>
                 <a href="#" id="adminNavLink" class="admin-link">Connexion</a>
@@ -157,25 +157,53 @@
         <div class="container">
             <div class="section-title">
                 <h2>Tableau de bord <span style="color:var(--secondary);">admin</span></h2>
-                <p>Gérez les produits, les commandes, les clients et les administrateurs.</p>
+                <p>Gérez vos ventes et vos produits.</p>
                 <div class="accent-line"></div>
             </div>
+            
+            <!-- NOUVEAU : ONGLET VUE D'ENSEMBLE -->
             <div class="admin-tabs">
-                <button class="active" data-tab="products">Produits</button>
+                <button class="active" data-tab="dashboard">Vue d'ensemble</button>
+                <button data-tab="products">Produits</button>
                 <button data-tab="orders">Commandes</button>
                 <button data-tab="customers">Clients</button>
                 <button data-tab="admins" id="adminsTab">Administrateurs</button>
                 <button id="adminLogoutBtn" style="margin-left:auto; color:#b91c1c;">Déconnexion</button>
             </div>
-            <div class="admin-panel active" id="panelProducts">
+
+            <!-- PANNEAU DASHBOARD -->
+            <div class="admin-panel active" id="panelDashboard">
+                <div id="dashboardStats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                    <!-- Les cartes de stats seront injectées ici par JS -->
+                </div>
+                
+                <div class="admin-card" style="margin-bottom: 20px;">
+                    <h4 style="color: #b45309;"><i class="fas fa-exclamation-triangle"></i> Alertes de stock</h4>
+                    <div id="dashboardRuptures"></div>
+                </div>
+
+                <div class="admin-card">
+                    <h4 style="color: #1e40af;"><i class="fas fa-chart-line"></i> Top 5 des produits les plus vendus</h4>
+                    <div id="dashboardTopProduits"></div>
+                </div>
+            </div>
+
+            <!-- PANNEAU PRODUITS -->
+            <div class="admin-panel" id="panelProducts">
                 <div class="admin-card"><h4>Liste des produits <button class="btn btn-sm btn-secondary" id="addProductBtn">+ Ajouter</button></h4><div id="productsList"></div></div>
             </div>
+
+            <!-- PANNEAU COMMANDES -->
             <div class="admin-panel" id="panelOrders">
                 <div class="admin-card"><h4>Commandes</h4><div id="ordersList"></div></div>
             </div>
+
+            <!-- PANNEAU CLIENTS -->
             <div class="admin-panel" id="panelCustomers">
                 <div class="admin-card"><h4>Clients fidèles</h4><div id="customersList"></div><hr><h5>Ajouter un client</h5><div class="add-customer-form"><input type="text" id="newCustomerName" placeholder="Nom" /><input type="tel" id="newCustomerPhone" placeholder="Téléphone" /><button class="btn btn-sm btn-secondary" id="addCustomerBtn">Ajouter</button></div></div>
             </div>
+
+            <!-- PANNEAU ADMINS -->
             <div class="admin-panel" id="panelAdmins">
                 <div class="admin-card"><h4>Gestion des administrateurs <button class="btn btn-sm btn-secondary" id="addAdminBtn">+ Ajouter</button></h4><div id="adminsList"></div></div>
             </div>

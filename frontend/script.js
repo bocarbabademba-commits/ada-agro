@@ -489,10 +489,9 @@ function showAdminUI() {
     document.getElementById('about').style.display = 'none';
     document.getElementById('contact').style.display = 'none';
     document.getElementById('adminSection').style.display = 'block';
-    renderAdminProducts();
-    renderOrders();
-    renderCustomers();
-    renderAdmins();
+    
+    // Charger le dashboard par défaut
+    renderDashboard();
 }
 
 function hideAdminUI() {
@@ -582,7 +581,65 @@ document.getElementById('resetPasswordForm').addEventListener('submit', async (e
 });
 
 // ============================================================
-// 7. ADMIN : GESTION DES PRODUITS
+// 7. ADMIN : DASHBOARD STATISTIQUES
+// ============================================================
+async function renderDashboard() {
+    try {
+        const stats = await apiRequest('/stats');
+        
+        // Cartes de statistiques
+        const statsHtml = `
+            <div class="admin-card" style="text-align: center; border-top: 4px solid #10b981;">
+                <h5 style="color: var(--gray); margin-bottom: 10px;">Chiffre d'Affaires</h5>
+                <span style="font-size: 2rem; font-weight: 800; color: #065f46;">${formatPrice(stats.chiffreAffaires)}</span>
+            </div>
+            <div class="admin-card" style="text-align: center; border-top: 4px solid var(--secondary);">
+                <h5 style="color: var(--gray); margin-bottom: 10px;">Commandes en attente</h5>
+                <span style="font-size: 2rem; font-weight: 800; color: #b45309;">${stats.commandesEnAttente}</span>
+            </div>
+            <div class="admin-card" style="text-align: center; border-top: 4px solid #b91c1c;">
+                <h5 style="color: var(--gray); margin-bottom: 10px;">Produits en rupture</h5>
+                <span style="font-size: 2rem; font-weight: 800; color: #b91c1c;">${stats.produitsEnRupture.length}</span>
+            </div>
+        `;
+        document.getElementById('dashboardStats').innerHTML = statsHtml;
+
+        // Liste des ruptures
+        if (stats.produitsEnRupture.length === 0) {
+            document.getElementById('dashboardRuptures').innerHTML = '<p style="color: green;">✅ Aucun produit en rupture de stock.</p>';
+        } else {
+            let html = '<ul style="list-style: none; padding: 0;">';
+            stats.produitsEnRupture.forEach(p => {
+                html += `<li style="padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-between;">
+                    <span>${p.nom}</span>
+                    <span style="color: #b91c1c; font-weight: bold;">Stock: ${p.stock}</span>
+                </li>`;
+            });
+            html += '</ul>';
+            document.getElementById('dashboardRuptures').innerHTML = html;
+        }
+
+        // Top Produits
+        if (stats.topProduits.length === 0) {
+            document.getElementById('dashboardTopProduits').innerHTML = '<p>Aucune vente enregistrée pour le moment.</p>';
+        } else {
+            let html = '<ol style="padding-left: 20px;">';
+            stats.topProduits.forEach(p => {
+                html += `<li style="padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">
+                    <strong>${p.nom}</strong> - <span style="color: var(--primary);">${p.quantite_totale} unités vendues</span>
+                </li>`;
+            });
+            html += '</ol>';
+            document.getElementById('dashboardTopProduits').innerHTML = html;
+        }
+
+    } catch (error) {
+        document.getElementById('dashboardStats').innerHTML = `<p style="color:red;">Erreur chargement des stats : ${error.message}</p>`;
+    }
+}
+
+// ============================================================
+// 8. ADMIN : GESTION DES PRODUITS
 // ============================================================
 async function renderAdminProducts() {
     try {
@@ -666,7 +723,7 @@ document.getElementById('productForm').addEventListener('submit', async function
 document.getElementById('addProductBtn').addEventListener('click', () => openProductModal());
 
 // ============================================================
-// 8. ADMIN : GESTION DES ADMINISTRATEURS
+// 9. ADMIN : GESTION DES ADMINISTRATEURS
 // ============================================================
 async function renderAdmins() {
     try {
@@ -738,7 +795,7 @@ document.getElementById('adminForm').addEventListener('submit', async function(e
 document.getElementById('addAdminBtn').addEventListener('click', () => openAdminModal());
 
 // ============================================================
-// 9. ADMIN : COMMANDES (AVEC LIEN PDF)
+// 10. ADMIN : COMMANDES (AVEC LIEN PDF)
 // ============================================================
 async function renderOrders() {
     try {
@@ -793,7 +850,7 @@ async function renderOrders() {
 }
 
 // ============================================================
-// 10. ADMIN : CLIENTS
+// 11. ADMIN : CLIENTS
 // ============================================================
 async function renderCustomers() {
     try {
@@ -820,7 +877,7 @@ document.getElementById('addCustomerBtn').addEventListener('click', async () => 
 });
 
 // ============================================================
-// 11. ADMIN : ONGLETS
+// 12. ADMIN : ONGLETS
 // ============================================================
 document.querySelectorAll('.admin-tabs button[data-tab]').forEach(tab => {
     tab.addEventListener('click', function() {
@@ -829,7 +886,10 @@ document.querySelectorAll('.admin-tabs button[data-tab]').forEach(tab => {
         const target = this.dataset.tab;
         document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
         document.getElementById('panel' + target.charAt(0).toUpperCase() + target.slice(1)).classList.add('active');
-        if (target === 'products') renderAdminProducts();
+        
+        // Charger les données en fonction de l'onglet
+        if (target === 'dashboard') renderDashboard();
+        else if (target === 'products') renderAdminProducts();
         else if (target === 'orders') renderOrders();
         else if (target === 'customers') renderCustomers();
         else if (target === 'admins') renderAdmins();
@@ -837,7 +897,7 @@ document.querySelectorAll('.admin-tabs button[data-tab]').forEach(tab => {
 });
 
 // ============================================================
-// 12. CART SIDEBAR & EVENTS
+// 13. CART SIDEBAR & EVENTS
 // ============================================================
 document.getElementById('cartToggle').addEventListener('click', (e) => {
     e.preventDefault();
@@ -892,7 +952,7 @@ document.getElementById('contactForm').addEventListener('submit', (e) => {
 });
 
 // ============================================================
-// 13. INITIALISATION
+// 14. INITIALISATION
 // ============================================================
 (async function init() {
     checkSession();
