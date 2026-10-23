@@ -11,8 +11,8 @@ let cart = JSON.parse(sessionStorage.getItem('adaCart')) || [];
 let allProductsData = []; 
 let appliedDiscount = 0;
 let currentCategoryFilter = 'all';
-let deliveryZones = []; // Stockera les zones de livraison
-let selectedDeliveryFee = 0; // Frais de livraison actuels
+let deliveryZones = []; 
+let selectedDeliveryFee = 0; 
 
 // ============================================================
 // 2. FONCTIONS UTILITAIRES
@@ -55,7 +55,7 @@ async function loadDeliveryZones() {
     try {
         deliveryZones = await apiRequest('/delivery');
         const select = document.getElementById('checkoutDeliveryZone');
-        if (!select) return; // Sécurité si l'élément n'est pas encore chargé
+        if (!select) return;
         
         select.innerHTML = '<option value="">-- Choisissez votre zone --</option>';
         deliveryZones.forEach(zone => {
@@ -66,7 +66,6 @@ async function loadDeliveryZones() {
     }
 }
 
-// Écouter le changement de zone de livraison
 document.addEventListener('DOMContentLoaded', () => {
     const zoneSelect = document.getElementById('checkoutDeliveryZone');
     if (zoneSelect) {
@@ -544,7 +543,6 @@ function showAdminUI() {
     document.getElementById('contact').style.display = 'none';
     document.getElementById('adminSection').style.display = 'block';
     
-    // Charger le dashboard par défaut
     renderDashboard();
 }
 
@@ -901,17 +899,47 @@ async function renderOrders() {
 }
 
 // ============================================================
-// 11. ADMIN : CLIENTS
+// 11. ADMIN : CLIENTS (AVEC SUPPRESSION)
 // ============================================================
 async function renderCustomers() {
     try {
         const customers = await apiRequest('/customers');
         const container = document.getElementById('customersList');
         if (customers.length === 0) { container.innerHTML = '<p>Aucun client.</p>'; return; }
+        
         let html = '';
-        customers.forEach(c => { html += `<div class="customer-item"><div class="info">${c.name} <small>${c.phone}</small></div><div class="points">${c.points} pts</div></div>`; });
+        customers.forEach(c => { 
+            html += `
+                <div class="customer-item">
+                    <div class="info">${c.name} <small>${c.phone}</small></div>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div class="points">${c.points} pts</div>
+                        <button class="delete-customer-btn" data-id="${c.id}" style="background: #fee2e2; color: #b91c1c; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Supprimer">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            `; 
+        });
         container.innerHTML = html;
-    } catch (error) { document.getElementById('customersList').innerHTML = `<p style="color:red;">Erreur : ${error.message}</p>`; }
+
+        // Ajout de l'événement pour le bouton Supprimer
+        container.querySelectorAll('.delete-customer-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const id = parseInt(this.dataset.id);
+                if (confirm('Supprimer définitivement ce client ? Ses points de fidélité seront perdus.')) {
+                    try {
+                        await apiRequest(`/customers/${id}`, 'DELETE');
+                        renderCustomers(); // Rafraîchir la liste
+                    } catch (error) {
+                        alert('Erreur : ' + error.message);
+                    }
+                }
+            });
+        });
+    } catch (error) { 
+        document.getElementById('customersList').innerHTML = `<p style="color:red;">Erreur : ${error.message}</p>`; 
+    }
 }
 
 document.getElementById('addCustomerBtn').addEventListener('click', async () => {
@@ -1005,7 +1033,7 @@ document.getElementById('contactForm').addEventListener('submit', (e) => {
 // 14. INITIALISATION
 // ============================================================
 (async function init() {
-    await loadDeliveryZones(); // Charger les zones de livraison
+    await loadDeliveryZones(); 
     checkSession();
     await renderClientProducts();
     renderCartItems();

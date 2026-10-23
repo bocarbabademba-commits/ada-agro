@@ -1188,3 +1188,7 @@ footer {
 .star-rating i.active {
     color: var(--secondary);
 }
+/* ===== BOUTON SUPPRIMER CLIENT ===== */
+.delete-customer-btn:hover {
+    background: #fecaca !important;
+}
