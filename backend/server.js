@@ -23,6 +23,7 @@ app.use('/api/admins', require('./routes/admins'));
 app.use('/api/promos', require('./routes/promos'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/stats', require('./routes/stats'));
+app.use('/api/delivery', require('./routes/delivery'));
 
 app.get('/api/test', (req, res) => {
     res.json({ message: 'API ADA AGRO fonctionne correctement !' });
